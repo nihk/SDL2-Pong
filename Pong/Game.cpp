@@ -145,6 +145,8 @@ void Game::update(float delta) {
 
 	//Next, try to perform Ball screen bounds handling
 	mBall->update(delta);
+	// This flag being true means the Ball received a message that changed
+	// its state in such a way that it should be updated once again
 	bool shouldReupdateBall = false;
 
 	// Check if ball went beyond top/bottom of screen
@@ -152,30 +154,21 @@ void Game::update(float delta) {
 		shouldReupdateBall = true;
 
 	} else if (mBall->message(MessageId::X_OUT_OF_SCREEN_BOUNDS, data)) {
-		// data was used as an out parameter here, it now contains the Ball's x position before being reset to 
-		// its default center position. Use this value to determine which score should be incremented
-		if (int* xPos = static_cast<int*>(data)) {
-			int scores[] = { 0, 0 };
-
-			if (*xPos < 0) {
-				// Player 2 scored
-				++scores[1];
-			} else if (*xPos > mScreenWidth) {
-				// Player 1 scored
-				++scores[0];
-			}
-
-			// Reassign the data with the new scores and message the score label for an update
-			data = scores;
-			mScoreKeeper->message(MessageId::UPDATE_SCORE, data);
-			shouldReupdateBall = true;
-		}
+		// data was used as an out parameter here, it now contains the details of which
+		// screen sides the ball has breached. This conveniently translates into a value to increase the 
+		// score by. That is, if the ball went beyond the left side of the screen that value would be 1 (i.e. "true"). 
+		// The score of player 2 is thus increased by that same value.
+		mScoreKeeper->message(MessageId::UPDATE_SCORE, data);
+		shouldReupdateBall = true;
 
 	} else {  
 		// Otherwise check for Ball collision with paddles.
 		// Reassign data with a pointer to a copy of the ball. I copied it because I wanted to use
 		// data as an out parameter when messaging the paddles. If I sent instead the pointer to mBall,
-		// it would've been corrupted by the out parameter manipulation.
+		// it would've been corrupted by the out parameter manipulation. The overhead of this copy
+		// could be relieved by having the Messageable::message() signature include a void* reply parameter
+		// and using that for the "out" part instead of the single data parameter as both IN and OUT; I could
+		// then just pass a const pointer to mBall and not a copy.
 		Entity entity = *mBall;
 		data = &entity;
 

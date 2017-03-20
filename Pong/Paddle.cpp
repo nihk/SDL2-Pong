@@ -10,6 +10,8 @@ Paddle::Paddle(SDL_Rect rect, SDL_Color color, int upKey, int downKey)
 }
 
 bool Paddle::message(const MessageId messageId, void* data) {
+	// IN: a uint8_t** which points to a pointer to the keys currently being pressed
+	// OUT: n/a
 	if (messageId == MessageId::SET_Y_VELOCITY) {
 		float yVelocity = 0.0f;
 
@@ -31,6 +33,8 @@ bool Paddle::message(const MessageId messageId, void* data) {
 		return true;
 	}
 
+	// IN: The Game's screen dimensions in the form of an int[] of size 2
+	// OUT: n/a
 	if (messageId == MessageId::Y_OUT_OF_SCREEN_BOUNDS) {
 		if (int* screenDimens = static_cast<int*>(data)) {
 			const int screenHeight = screenDimens[1];
@@ -53,6 +57,8 @@ bool Paddle::message(const MessageId messageId, void* data) {
 		return false;
 	}
 
+	// IN: An entity that may have collided with the Paddle
+	// OUT: an int* pointing to the angle the Entity should move towards after colliding with the paddle
 	if (messageId == MessageId::HANDLE_COLLISION) {
 		int segment;
 		if (Entity* entity = static_cast<Entity*>(data)) {

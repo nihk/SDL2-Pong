@@ -1,7 +1,8 @@
 #pragma once
 
 // data types passed with Messageable::message() can vary
-// depending on which class receives the message
+// depending on which class receives the message. See comments
+// within each classes implementation of message() for clarification
 enum class MessageId {
 	NONE = -1,
 	SET_Y_VELOCITY,

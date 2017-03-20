@@ -35,6 +35,9 @@ void TwoPlayerScoreKeeper::draw(SDL_Renderer* renderer) const {
 }
 
 bool TwoPlayerScoreKeeper::message(const MessageId messageId, void* data) {
+	// IN: an int[] of size 2. index 0 is the value to increase the score of player 1, index
+	// 1 is the value to increase the score of player 2.
+	// OUT: n/a
 	if (messageId == MessageId::UPDATE_SCORE) {
 		if (int* scores = static_cast<int*>(data)) {
 			mPlayer1Score += scores[0];
@@ -55,7 +58,7 @@ void TwoPlayerScoreKeeper::refreshLabelPositions() {
 	const std::string divider(":");
 	const std::string player2Score = std::string(" ") + std::to_string(mPlayer2Score);
 
-	// These calculations ensure the divider character is always positioned at the center of the screen
+	// These calculations ensure the divider character is always positioned at the center of the screen.
 	// Assumes all elements of mScoreLabels have the same single character width.
 	const int characterWidth = static_cast<int>(mTextLabels.front()->getSingleCharacterWidth());
 
