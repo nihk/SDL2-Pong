@@ -11,7 +11,7 @@ public:
 	using Entity::Entity;
 	Ball(SDL_Rect rect, SDL_Color color);
 
-	bool message(const MessageId messageId, void* data = nullptr) override;
+	bool message(const MessageId messageId, const void* data = nullptr, void* reply = nullptr) override;
 	void update(float delta) override;
 
 private:

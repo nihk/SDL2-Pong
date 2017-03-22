@@ -12,15 +12,15 @@ Ball::Ball(SDL_Rect rect, SDL_Color color)
 	setVelocity(static_cast<float>(cos(randomRads) * mCurrentSpeed), static_cast<float>(sin(randomRads) * mCurrentSpeed));
 }
 
-bool Ball::message(const MessageId messageId, void* data) {
-	// IN: The new degrees (int) the ball should direct its velocity towards
-	// OUT: n/a
+bool Ball::message(const MessageId messageId, const void* data, void* reply) {
+	// data: an int* pointing to the new degrees the ball should direct its velocity towards
+	// reply: nullptr
 	if (messageId == MessageId::PADDLE_BOUNCE) {
-		if (int* degrees = static_cast<int*>(data)) {
+		if (const int* degrees = static_cast<const int*>(data)) {
 			// Move back to the previously known position before a paddle collision
 			setCenter(mPreviousCenter);
 
-			// Paddle bounce dictates a speed increase
+			// Paddle bounce dictates a speed increase (capped)
 			if (mCurrentSpeed < MAX_SPEED) {
 				mCurrentSpeed += SPEED_INCREMENT;
 			}
@@ -29,8 +29,8 @@ bool Ball::message(const MessageId messageId, void* data) {
 			// Since the degrees provided by Paddle::getAngleFromSegment only consider the left paddle, there 
 			// needs to be some extra calculations to make it work for a bounce off of the right paddle, i.e. flip the 
 			// direction then rotate by 180 degrees
-			int adjustedDegrees = *degrees * (isPositiveXVelocity ? -1 : 1) + (isPositiveXVelocity ? 180 : 0);
-			float rads = static_cast<float>(adjustedDegrees * M_PI / 180.0f);
+			const int adjustedDegrees = *degrees * (isPositiveXVelocity ? -1 : 1) + (isPositiveXVelocity ? 180 : 0);
+			const float rads = static_cast<float>(adjustedDegrees * M_PI / 180.0f);
 
 			setVelocity(static_cast<float>(cos(rads) * mCurrentSpeed), static_cast<float>(sin(rads) * mCurrentSpeed));
 
@@ -41,12 +41,13 @@ bool Ball::message(const MessageId messageId, void* data) {
 		return false;
 	}
 
-	// IN: The Game's screen dimensions in the form of an int[] of size 2
-	// OUT: n/a
+	// data: The Game's screen dimensions in the form of an int[] of size 2
+	// reply: nullptr
 	if (messageId == MessageId::Y_OUT_OF_SCREEN_BOUNDS) {
-		if (int* screenDimens = static_cast<int*>(data)) {
-			int screenHeight = screenDimens[1];
-			SDL_Point center = getCenter();
+		if (const int* screenDimens = static_cast<const int*>(data)) {
+			const int screenHeight = screenDimens[1];
+			const SDL_Point center = getCenter();
+
 			if (center.y < 0 || center.y > screenHeight) {
 				// Revert to the position before going out of screen bounds
 				setCenter(mPreviousCenter);
@@ -60,28 +61,27 @@ bool Ball::message(const MessageId messageId, void* data) {
 		return false;
 	}
 
-	// IN: The Game's screen dimensions in the form of an int[] of size 2
-	// OUT: an int[] of size 2 determining which side of the screen the ball breached: index 0 for the right side
-	// of screen and index 1 for the left side of screen
+	// data: The Game's screen dimensions in the form of an int[] of size 2
+	// reply: an int[] of size 2 describing which side of the screen the ball breached: index 0 for the right side
+	//		  of screen and index 1 for the left side of screen
 	if (messageId == MessageId::X_OUT_OF_SCREEN_BOUNDS) {
-		if (int* screenDimens = static_cast<int*>(data)) {
+		if (const int* screenDimens = static_cast<const int*>(data)) {
 			const int screenWidth = screenDimens[0];
 			const int screenHeight = screenDimens[1];
-			SDL_Point ballCenter = getCenter();
+			const SDL_Point ballCenter = getCenter();
 
 			const bool isBallRightOfScreen = ballCenter.x > screenWidth;
 			const bool isBallLeftOfScreen = ballCenter.x < 0;
 
 			if (isBallLeftOfScreen || isBallRightOfScreen) {
-				// Now use data as an out param, to let the Game know which side of the screen the Ball went beyond.
-				// Recasting wasn't technically necessary, but was done so for the purposes of readability (i.e. variable name change)
-				int* ballScreenStates = static_cast<int*>(data);
-				ballScreenStates[0] = isBallRightOfScreen;
-				ballScreenStates[1] = isBallLeftOfScreen;
+				// Now use reply as an out param, to let the Game know which side of the screen the Ball went beyond.
+				int* ballScreenXBoundsStates = static_cast<int*>(reply);
+				ballScreenXBoundsStates[0] = isBallRightOfScreen;
+				ballScreenXBoundsStates[1] = isBallLeftOfScreen;
 
 				// Reset the ball's position after it went beyond one of the screen's x bounds
-				setCenter(screenWidth / 2 - mRect.w, screenHeight / 2 - mRect.h);
-				float randomRads = getRandomValidBallRadians();
+				setCenter(screenWidth / 2 - mRect.w / 2, screenHeight / 2 - mRect.h / 2);
+				const float randomRads = getRandomValidBallRadians();
 				mCurrentSpeed = MIN_SPEED;
 				setVelocity(static_cast<float>(cos(randomRads) * mCurrentSpeed), static_cast<float>(sin(randomRads) * mCurrentSpeed));
 

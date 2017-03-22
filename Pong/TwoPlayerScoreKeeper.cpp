@@ -34,12 +34,12 @@ void TwoPlayerScoreKeeper::draw(SDL_Renderer* renderer) const {
 	}
 }
 
-bool TwoPlayerScoreKeeper::message(const MessageId messageId, void* data) {
-	// IN: an int[] of size 2. index 0 is the value to increase the score of player 1, index
-	// 1 is the value to increase the score of player 2.
-	// OUT: n/a
+bool TwoPlayerScoreKeeper::message(const MessageId messageId, const void* data, void* reply) {
+	// data: an int[] of size 2. index 0 is the value to increase the score of player 1, index
+	//		 1 is the value to increase the score of player 2.
+	// reply: nullptr
 	if (messageId == MessageId::UPDATE_SCORE) {
-		if (int* scores = static_cast<int*>(data)) {
+		if (const int* scores = static_cast<const int*>(data)) {
 			mPlayer1Score += scores[0];
 			mPlayer2Score += scores[1];
 			refreshLabelPositions();

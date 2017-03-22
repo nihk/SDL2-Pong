@@ -57,7 +57,7 @@ public:
 
 	void move(int dx, int dy);
 	virtual void update(float delta);
-	bool message(const MessageId messageId, void* data = nullptr) override;
+	bool message(const MessageId messageId, const void* data = nullptr, void* reply = nullptr) override;
 
 protected:
 	SDL_Rect mRect;

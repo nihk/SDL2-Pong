@@ -73,6 +73,6 @@ void Entity::update(float delta) {
 	move(dx, dy);
 }
 
-bool Entity::message(const MessageId messageId, void* data) {
+bool Entity::message(const MessageId messageId, const void* data, void* reply) {
 	return false;
 }

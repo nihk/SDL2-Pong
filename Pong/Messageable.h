@@ -18,5 +18,8 @@ enum class MessageId {
 class Messageable {
 public:
 	virtual ~Messageable() = default;
-	virtual bool message(const MessageId messageId, void* data = nullptr) = 0;
+	// @param reply is to be used as an OUT parameter
+	virtual bool message(const MessageId messageId, 
+						 const void* data = nullptr, 
+						 void* reply = nullptr) = 0;
 };

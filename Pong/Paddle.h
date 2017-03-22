@@ -11,7 +11,7 @@ public:
 	using Entity::Entity;
 	Paddle(SDL_Rect rect, SDL_Color color, int upKey, int downKey);
 
-	bool message(const MessageId messageId, void* data = nullptr) override;
+	bool message(const MessageId messageId, const void* data = nullptr, void* reply = nullptr) override;
 
 private:
 	static const uint8_t NUM_SEGMENTS = 5;

@@ -14,7 +14,7 @@ public:
 	~TwoPlayerScoreKeeper();
 
 	void draw(SDL_Renderer* renderer) const;
-	bool message(const MessageId messageId, void* data = nullptr) override;
+	bool message(const MessageId messageId, const void* data = nullptr, void* reply = nullptr) override;
 
 private:
 	static const int PLAYER_1_KEY;

@@ -9,21 +9,17 @@ Paddle::Paddle(SDL_Rect rect, SDL_Color color, int upKey, int downKey)
 	, mDownKey(downKey) {
 }
 
-bool Paddle::message(const MessageId messageId, void* data) {
-	// IN: a uint8_t** which points to a pointer to the keys currently being pressed
-	// OUT: n/a
+bool Paddle::message(const MessageId messageId, const void* data, void* reply) {
+	// data: a uint8_t* which points the keys currently being pressed
+	// reply: nullptr
 	if (messageId == MessageId::SET_Y_VELOCITY) {
 		float yVelocity = 0.0f;
 
-		// Had to wrap the keys in a pointer since the method signature doesn't take const void* data,
-		// which Game::mKeys is typed as
-		if (uint8_t** pKeys = static_cast<uint8_t**>(data)) {
-			const uint8_t* keys = *pKeys;
-
+		if (const uint8_t* keys = static_cast<const uint8_t*>(data)) {
 			if (keys[mUpKey]) {
-				yVelocity = -Paddle::Y_VELOCITY_DURING_UP_OR_DOWN_KEYPRESS;
+				yVelocity = -Y_VELOCITY_DURING_UP_OR_DOWN_KEYPRESS;
 			} else if (keys[mDownKey]) {
-				yVelocity = Paddle::Y_VELOCITY_DURING_UP_OR_DOWN_KEYPRESS;
+				yVelocity = Y_VELOCITY_DURING_UP_OR_DOWN_KEYPRESS;
 			}
 
 			setVelocityY(yVelocity);
@@ -33,10 +29,10 @@ bool Paddle::message(const MessageId messageId, void* data) {
 		return true;
 	}
 
-	// IN: The Game's screen dimensions in the form of an int[] of size 2
-	// OUT: n/a
+	// data: The Game's screen dimensions in the form of an int[] of size 2
+	// reply: nullptr
 	if (messageId == MessageId::Y_OUT_OF_SCREEN_BOUNDS) {
-		if (int* screenDimens = static_cast<int*>(data)) {
+		if (const int* screenDimens = static_cast<const int*>(data)) {
 			const int screenHeight = screenDimens[1];
 			bool wasOutOfYBounds = false;
 
@@ -57,16 +53,16 @@ bool Paddle::message(const MessageId messageId, void* data) {
 		return false;
 	}
 
-	// IN: An entity that may have collided with the Paddle
-	// OUT: an int* pointing to the angle the Entity should move towards after colliding with the paddle
+	// data: An Entity* that may have collided with this Paddle
+	// reply: an int* pointing to the angle the Entity should move towards after colliding with the paddle
 	if (messageId == MessageId::HANDLE_COLLISION) {
 		int segment;
-		if (Entity* entity = static_cast<Entity*>(data)) {
-			SDL_Point center = entity->getCenter();
+		if (const Entity* entity = static_cast<const Entity*>(data)) {
+			const SDL_Point center = entity->getCenter();
 			if (containsPoint(center)
 					&& (segment = findSegmentContainingPoint(center)) != -1) {
-				// Use data as an OUT parameter for the angle
-				int* angle = static_cast<int*>(data);
+				// Use reply as an OUT parameter for the angle
+				int* angle = static_cast<int*>(reply);
 				*angle = getAngleFromSegment(segment);
 
 				return true;

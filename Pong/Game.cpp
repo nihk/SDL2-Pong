@@ -124,65 +124,42 @@ void Game::shutdown() {
 }
 
 void Game::update(float delta) {
-	// I wanted to treat the Paddles and Ball as encapsulated as possible by only interacting
-	// with them via messaging. It ended up being a bit confusing using the void* data parameter
-	// with both IN and OUT contexts. In future I think I'd probably have the message signature
-	// be something like message(MessageId, void* data, void* reply) to clarify things a bit more.
-
-	// Pass the screen dimension data with messages to keep the Entities within screen bounds
-	int screenDimens[] = { mScreenWidth, mScreenHeight };
-	void* data = screenDimens;
+	// Prepare arguments for the first couple of messages
+	const int screenDimens[] = { mScreenWidth, mScreenHeight };
+	int ballScreenXBoundsStates[2];
 
 	// First handle where the paddle should update to
 	for (const auto& paddle: mPaddles) {
 		// Set the paddles' velocities based on the key states
-		if (paddle->message(MessageId::SET_Y_VELOCITY, &mKeys)) {
+		if (paddle->message(MessageId::SET_Y_VELOCITY, mKeys)) {
 			paddle->update(delta);
-			// Handle paddles going off the top/bottom of screen
-			paddle->message(MessageId::Y_OUT_OF_SCREEN_BOUNDS, data);
+			// Handle paddles going off the top/bottom of screen after the update
+			paddle->message(MessageId::Y_OUT_OF_SCREEN_BOUNDS, screenDimens);
 		}
 	}
 
-	//Next, try to perform Ball screen bounds handling
+	// Next, update the Ball and try to perform screen bounds handling on it
 	mBall->update(delta);
-	// This flag being true means the Ball received a message that changed
-	// its state in such a way that it should be updated once again
-	bool shouldReupdateBall = false;
+	bool shouldReupdateAfterVelocityChange = false;
 
-	// Check if ball went beyond top/bottom of screen
-	if (mBall->message(MessageId::Y_OUT_OF_SCREEN_BOUNDS, data)) {
-		shouldReupdateBall = true;
-
-	} else if (mBall->message(MessageId::X_OUT_OF_SCREEN_BOUNDS, data)) {
-		// data was used as an out parameter here, it now contains the details of which
-		// screen sides the ball has breached. This conveniently translates into a value to increase the 
-		// score by. That is, if the ball went beyond the left side of the screen that value would be 1 (i.e. "true"). 
-		// The score of player 2 is thus increased by that same value.
-		mScoreKeeper->message(MessageId::UPDATE_SCORE, data);
-		shouldReupdateBall = true;
-
-	} else {  
-		// Otherwise check for Ball collision with paddles.
-		// Reassign data with a pointer to a copy of the ball. I copied it because I wanted to use
-		// data as an out parameter when messaging the paddles. If I sent instead the pointer to mBall,
-		// it would've been corrupted by the out parameter manipulation. The overhead of this copy
-		// could be relieved by having the Messageable::message() signature include a void* reply parameter
-		// and using that for the "out" part instead of the single data parameter as both IN and OUT; I could
-		// then just pass a const pointer to mBall and not a copy.
-		Entity entity = *mBall;
-		data = &entity;
+	if (mBall->message(MessageId::Y_OUT_OF_SCREEN_BOUNDS, screenDimens)) {
+		shouldReupdateAfterVelocityChange = true;
+	} else if (mBall->message(MessageId::X_OUT_OF_SCREEN_BOUNDS, screenDimens, ballScreenXBoundsStates)) {
+		mScoreKeeper->message(MessageId::UPDATE_SCORE, ballScreenXBoundsStates);
+	} else {
+		int angle;
 
 		for (const auto& paddle : mPaddles) {
-			if (paddle->message(MessageId::HANDLE_COLLISION, data)) {
-				// Update it's new velocity based on that collision, using the newly assigned data pointer out value
-				mBall->message(MessageId::PADDLE_BOUNCE, data);
-				shouldReupdateBall = true;
+			if (paddle->message(MessageId::HANDLE_COLLISION, mBall, &angle)) {
+				// Update it's new velocity based on that collision, using the newly assigned angle value
+				mBall->message(MessageId::PADDLE_BOUNCE, &angle);
+				shouldReupdateAfterVelocityChange = true;
 				break;
 			}
 		}
 	}
 
-	if (shouldReupdateBall) {
+	if (shouldReupdateAfterVelocityChange) {
 		mBall->update(delta);
 	}
 }
